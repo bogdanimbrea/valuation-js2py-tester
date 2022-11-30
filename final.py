@@ -93,6 +93,14 @@ if __name__ == "__main__":
     parameters = get_done_parameters(raw_js)
     print(parameters)
     print(functions)
+
+    '''
+    fname = 'get_treasury_monthly'
+    sname = 'get_treasury_monthly30'
+    if fname in sname:
+        print('yes')
+        print(sname.replace(fname, ''))
+    '''
     urls = []
     ticker = 'AAPL'
     for item in functions:
@@ -135,13 +143,30 @@ if __name__ == "__main__":
 
     # After we have the context, we need to format the raw js valuation
     append_functions = """
-    function monitor(context){return;}
-    function Description(text){return '';}
-    function _SetEstimatedValue(value, ccy){console.log("_SetEstimatedValue log: " + value + ccy); return;}
-    function _StopIfWatch(value, ccy){console.log("_StopIfWatch log: " + value + ccy); return true;}
-    function print(str, label, type){console.log(str);return;}
-    function Input(original){if(_input_params){for(key in _input_params){original[key] = _input_params[key];}}for(key in original){if(key[0] == '_' && original[key] != '-' && typeof original[key] == 'number'){original[key] /= 100;}}return original;}
-    """
+                var _return_value=0;var _return_ccy='';var _input_global={};var _chart_data_x_historic_lastDate;
+                function monitor(context){return;}
+                function Description(text){return '';}
+                function _SetEstimatedValue(value, ccy){console.log("_SetEstimatedValue log: " + value + ccy); return;}
+                function _StopIfWatch(value, ccy){console.log("_StopIfWatch log: " + value + ' ' + ccy);_return_value=value;_return_ccy=ccy;return true;}
+                function print(str, label, type){console.log(str);return;}
+                function Input(original){if(_input_params){for(key in _input_params){original[key] = _input_params[key];}}for(key in original){if(key[0] == '_' && original[key] != '-' && typeof original[key] == 'number'){original[key] /= 100;}}_input_global=original;return _input_global;}
+                function setInputDefault(Key, Value){let roundedVal = Math.ceil(Value * 100) / 100;if(_input_params){for(param_key in _input_params){if(param_key == Key){return;}}}if(Key.charAt(0) == '_'){_input_global[Key] = roundedVal / 100;}else{_input_global[Key] = roundedVal;}}
+                function fillHistoricUsingReport(report, key, measure){_chart_data_x_historic_lastDate = parseInt(report[0]['date']);}
+                function fillHistoricUsingList(list, key, endingYear){_chart_data_x_historic_lastDate = parseInt(endingYear);}
+                function dateToIndex(date){if(_chart_data_x_historic_lastDate){return parseInt(date) - _chart_data_x_historic_lastDate - 1;}return -1;}
+                function forecast(list, key){if(_input_params){for(param_key in _input_params){if(param_key.charAt(0) == '!'){var indexOfParameter =  param_key.indexOf('_');if(key == param_key.substr(1, indexOfParameter - 1)){var listIndex = dateToIndex(param_key.substr(indexOfParameter + 1));if(listIndex != -1){list[listIndex] = Number(_input_params[param_key]);}}}}}return list;}
+                // -------------------------------------
+                // copy paste from valuation-functions.js
+                function toM(value){return value / 1000000;}
+                function toK(value){return value / 1000;}
+                function addKey(key, report_from, report_to){for(var i = 0; i < report_from.length; i++){for(var j = 0; j < report_to.length; j++){if(report_from[i]['date'] == report_to[j]['date']){if(!(key in report_to[j])){report_to[j][key] = report_from[i][key];}if(i < report_from.length - 1){i++;}else{report_to = report_to.slice(0, j + 1);return report_to;}}}}return report_to;}
+                function linearRegressionGrowthRate(key, report, years, slope){var rep = report.slice();rep.reverse();var count = rep.length;var xSum=0, ySum=0, xxSum=0, xySum=0;var rate = 0;try{for(var i = 0; i < count; i++){xSum += i+1;ySum += rep[i][key];xxSum += (i+1) * (i+1);xySum += rep[i][key] * (i+1);}var slope = slope * (count * xySum - xSum * ySum) / (count * xxSum - xSum * xSum);var intercept = (ySum / count) - (slope * xSum) / count;var xValues = [];var yValues = [];for(var i = 0; i < count + years; i++){xValues.push(i+1);yValues.push((i+1) * slope + intercept);}return yValues;}catch(error){print(error, 'Error in linearRegressionGrowthRate');}}
+                function getGrowthList(report, key, length, rate){var growth_list = [];var lastValue = 0;if(report.length > 1){report[0][key];}else{lastValue = report[key];}for(var i = 1; i <= length; i++){growth_list.push(lastValue * Math.pow((1+rate), i));}return growth_list;}
+                function applyMarginToList(list, margin){list.forEach(function(val, i){list[i] = val * margin;});return list;}
+                function averageGrowthRate(key, report){var rep = report.slice();rep.reverse();var val0 = rep[0][key];var val1;var rate = 0;try{for(var i = 1; i < rep.length; i++){val1 = rep[i][key];if(val0){rate += (val1 - val0)/val0;}val0 = val1;}rate /= rep.length - 1;return rate;}catch(error){print(error, 'Error in average_growth_rate');}}
+                function averageMargin(key1, key2, report){var margin = 0;try{for(var i = 0; i < report.length; i++){margin += report[i][key1]/report[i][key2];}margin /= report.length;return margin;}catch(error){print(error, 'Error in average_margin');}}
+                function replaceWithLTM(report, ltm){for(var key in ltm){var value = ltm[key];if( typeof value == 'number' ){report[0][key] = ltm[key]}}return report;}
+                """
 
     # LOOKOUT for replace_with... functions for reports and create DEEP COPIES of them
     # example:
@@ -151,6 +176,5 @@ if __name__ == "__main__":
     formatted_valuation = append_functions + formatted_valuation + '\n_when_done();'
     print(formatted_valuation)
     context.execute(formatted_valuation)
-
     print("Done")
 

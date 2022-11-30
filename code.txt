@@ -68,7 +68,8 @@ $.when(
   get_income_statement_ltm(),
   get_balance_sheet_statement(),
   get_cash_flow_statement(),
-  get_cash_flow_statement_ltm()).done(
+  get_cash_flow_statement_ltm(),
+  get_treasury_monthly(30)).done(
   function(income, income_ltm, balance, flows, flows_ltm){
     var context = [];
     income = income[0].slice(0, INPUT.YEARS);
