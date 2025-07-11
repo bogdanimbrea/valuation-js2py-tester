@@ -94,7 +94,6 @@ if __name__ == "__main__":
     print(parameters)
     print(functions)
 
-    '''
     fname = 'get_treasury_monthly'
     sname = 'get_treasury_monthly30'
     if fname in sname:
@@ -176,5 +175,7 @@ if __name__ == "__main__":
     formatted_valuation = append_functions + formatted_valuation + '\n_when_done();'
     print(formatted_valuation)
     context.execute(formatted_valuation)
+    
+    '''
     print("Done")
 
